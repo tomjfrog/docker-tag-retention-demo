@@ -1,0 +1,49 @@
+name: Build Docker Images
+
+permissions:
+  id-token: write
+
+on:
+  workflow_dispatch:
+
+env:
+  DOCKER_REGISTRY: tomjfrog.jfrog.io
+  DOCKER_REPOSITORY: docker-tag-mgmt-demo-local
+  IMAGE_NAME: hello-world-alpine
+  IMAGE_TAG: ${{ git.commit_sha }}
+  CUSTOM_MESSAGE: ${{ git.commit_sha }}
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        id: setup-jfrog-cli
+        env:
+          JF_URL: https://tomjfrog.jfrog.io
+        with:
+          oidc-provider-name: github-oidc-integration
+          oidc-audience: jfrog-github
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+          -t ${{ env.DOCKER_REGISTRY}}/${{ env.DOCKER_REPOSITORY}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG}} \
+          -t ${{ env.DOCKER_REGISTRY}}/${{ env.DOCKER_REPOSITORY}}/${{env.IMAGE_NAME}}:latest \
+          --build-arg CUSTOM_MESSAGE="${{ env.CUSTOM_MESSAGE}}" .
+
+      - name: Docker Login
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login ${{ env.DOCKER_REGISTRY }} -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Publish Docker Image and Tags
+        run: |
+          docker push ${{ env.DOCKER_REGISTRY}}/${{ env.DOCKER_REPOSITORY}}/${{env.IMAGE_NAME}}:${{ env.IMAGE_TAG}}
+          docker push ${{ env.DOCKER_REGISTRY}}/${{ env.DOCKER_REPOSITORY}}/${{env.IMAGE_NAME}}:latest
+
+
