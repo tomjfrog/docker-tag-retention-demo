@@ -10,8 +10,8 @@ env:
   DOCKER_REGISTRY: tomjfrog.jfrog.io
   DOCKER_REPOSITORY: docker-tag-mgmt-demo-local
   IMAGE_NAME: hello-world-alpine
-  IMAGE_TAG: ${{ github.sha }}
-  CUSTOM_MESSAGE: ${{ github.sha }}
+  IMAGE_TAG: ${{ github.run_number }}
+  CUSTOM_MESSAGE: ${{ github.run_number }}
 
 
 jobs:
